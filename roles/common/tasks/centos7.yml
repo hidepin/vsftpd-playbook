@@ -1,0 +1,38 @@
+---
+# file: roles/common/tasks/centos7.yml
+- name: (centos7) check firewalld zone
+  shell: firewall-cmd --get-default-zone
+  register: is_firewalld_zone
+  changed_when: is_firewalld_zone.stdout != 'trusted'
+
+- name: (centos7) Invalid firewall services
+  shell: firewall-cmd --set-default-zone=trusted
+  when: is_firewalld_zone.stdout != 'trusted'
+
+- name: (centos7) chrony packages install
+  yum: name=chrony state=present
+  when: ntp_server is defined
+
+- name: (centos7) chrony.conf settings
+  template: src=chrony.conf.j2 dest=/etc/chrony.conf owner=root group=root mode=0644 backup=true
+  register: is_chrony_conf_setting
+  when: ntp_server is defined
+  notify:
+    - chronyd restart
+
+- name: (centos7) backup chrony.conf setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_chrony_conf_setting.backup_file}}"
+    - /etc/chrony.conf
+  when: is_chrony_conf_setting|changed
+
+- name: (centos7) delete chrony.conf setting backup
+  file: path={{is_chrony_conf_setting.backup_file}} state=absent
+  when: is_chrony_conf_setting|changed
+
+- name: (centos7) enable chronyd services
+  service: name=chronyd state=started enabled=yes
+  when: ntp_server is defined

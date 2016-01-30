@@ -1,0 +1,6 @@
+---
+# file: roles/common/defaults/main.yml
+#ntp_server: 172.16.111.1
+#common_user:
+#  # user/password="hidepin/hidepin123"
+#  - { name: 'hidepin', password: '$1$SomeSalt$Drh7s/vUcl5XnIZ/Neglz1', uid: '2001', group: 'hidepin', gid: '2001' }

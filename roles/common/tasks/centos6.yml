@@ -1,0 +1,99 @@
+---
+# file: roles/common/tasks/centos6.yml
+- name: (centos6) disable firewall services
+  service: name={{item}} state=stopped enabled=no
+  with_items:
+    - iptables
+    - ip6tables
+
+- name: (centos6) check NetworkManager
+  shell: rpm -q NetworkManager
+  register: is_networkmanager_installed
+  failed_when: is_networkmanager_installed.rc not in [0,1]
+  changed_when: is_networkmanager_installed.rc not in [0,1]
+
+- name: (centos6) disable NetworkManager service
+  service: name=NetworkManager state=stopped enabled=no
+  when: is_networkmanager_installed.rc == 0
+
+- name: (centos6) ntp packages install
+  yum: name=ntp state=present
+  when: ntp_server is defined
+
+- name: (centos6) ntp step-tickers settings
+  template: src=etc_ntp_step-tickers.j2 dest=/etc/ntp/step-tickers owner=root group=root mode=0644 backup=true
+  register: is_step_tickers_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (centos6) backup step-tickers setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_step_tickers_setting.backup_file}}"
+    - /etc/ntp/step-tickers
+  when: is_step_tickers_setting|changed
+
+- name: (centos6) delete step-tickers setting backup
+  file: path={{is_step_tickers_setting.backup_file}} state=absent
+  when: is_step_tickers_setting|changed
+
+- name: (centos6) ntp.conf settings
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf owner=root group=root mode=0644 backup=true
+  register: is_ntp_conf_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (centos6) backup ntp.conf setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_ntp_conf_setting.backup_file}}"
+    - /etc/ntp.conf
+  when: is_ntp_conf_setting|changed
+
+- name: (centos6) delete ntp.conf setting backup
+  file: path={{is_ntp_conf_setting.backup_file}} state=absent
+  when: is_ntp_conf_setting|changed
+
+- name: (centos6) /etc/sysconfig/ntpd settings
+  template: src=etc_sysconfig_ntpd.j2 dest=/etc/sysconfig/ntpd owner=root group=root mode=0644 backup=true
+  register: is_ntpd_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (centos6) backup ntpd setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_ntpd_setting.backup_file}}"
+    - /etc/sysconfig/ntpd
+  when: is_ntpd_setting|changed
+
+- name: (centos6) delete ntpd setting backup
+  file: path={{is_ntpd_setting.backup_file}} state=absent
+  when: is_ntpd_setting|changed
+
+- name: (centos6) ntpd running check
+  command: service ntpd status
+  register: running_ntpd
+  failed_when: running_ntpd.rc not in [0,1,3]
+  changed_when: running_ntpd.rc != 0
+
+- name: (centos6) run ntpdate
+  service: name=ntpdate state=started
+  when: running_ntpd.rc == 1 and ntp_server is defined
+
+- name: (centos6) enable ntpdate service
+  service: name=ntpdate enabled=yes
+  when: ntp_server is defined
+
+- name: (centos6) enable ntpd services
+  service: name=ntpd state=started enabled=yes
+  when: ntp_server is defined
