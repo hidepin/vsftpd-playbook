@@ -5,23 +5,6 @@
   with_items:
     - vsftpd
 
-- name: add vsftpd settings
-  template: src=vsftpd.conf.j2 dest=/etc/vsftpd/vsftpd.conf owner=root group=root mode=0600 backup=true
-  register: is_vsftpd_setting
-
-- name: backup vsftpd setting
-  fetch:
-    src={{item}}
-    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
-  with_items:
-    - "{{is_vsftpd_setting.backup_file}}"
-    - /etc/vsftpd/vsftpd.conf
-  when: is_vsftpd_setting|changed
-
-- name: delete vsftpd setting backup
-  file: path={{is_vsftpd_setting.backup_file}} state=absent
-  when: is_vsftpd_setting|changed and is_vsftpd_setting.backup_file is defined
-
 - name: add vsftpd pam.d settings
   template: src=vsftpd.virtual.j2 dest=/etc/pam.d/vsftpd.virtual owner=root group=root mode=0644 backup=true
   register: is_vsftpd_pam_d_setting
@@ -69,3 +52,20 @@
 
 - name: create vsftpd dir
   file: path={{vsftp_dir}} state=directory owner={{common_user[0].name}} group={{common_user[0].group}}
+
+- name: add vsftpd settings
+  template: src=vsftpd.conf.j2 dest=/etc/vsftpd/vsftpd.conf owner=root group=root mode=0600 backup=true
+  register: is_vsftpd_setting
+
+- name: backup vsftpd setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_vsftpd_setting.backup_file}}"
+    - /etc/vsftpd/vsftpd.conf
+  when: is_vsftpd_setting|changed
+
+- name: delete vsftpd setting backup
+  file: path={{is_vsftpd_setting.backup_file}} state=absent
+  when: is_vsftpd_setting|changed and is_vsftpd_setting.backup_file is defined
