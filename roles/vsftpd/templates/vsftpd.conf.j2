@@ -9,13 +9,15 @@
 # capabilities.
 #
 # Allow anonymous FTP? (Beware - allowed by default if you comment this out).
-anonymous_enable=YES
+###anonymous_enable=YES
+anonymous_enable=NO
 #
 # Uncomment this to allow local users to log in.
 local_enable=YES
 #
 # Uncomment this to enable any form of FTP write command.
-write_enable=YES
+###write_enable=YES
+write_enable=NO
 #
 # Default umask for local users is 077. You may wish to change this to 022,
 # if your users expect that (022 is used by most other ftpd's)
@@ -114,6 +116,11 @@ listen=YES
 # Make sure, that one of the listen options is commented !!
 #listen_ipv6=YES
 
-pam_service_name=vsftpd
-userlist_enable=YES
-tcp_wrappers=YES
+###pam_service_name=vsftpd
+pam_service_name=vsftpd.virtual
+###userlist_enable=YES
+###tcp_wrappers=YES
+
+guest_enable=YES
+guest_username={{common_user[0].name}}
+local_root={{vsftp_dir}}
