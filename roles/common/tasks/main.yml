@@ -1,0 +1,136 @@
+---
+# file: roles/common/tasks/main.yml
+- name: packages install
+  yum: name={{item}} state=present
+  with_items:
+    - openssh-clients
+    - libselinux-python
+
+- name: disable selinux
+  shell: setenforce Permissive
+  when: ansible_selinux.status is not defined or ansible_selinux.status != "disabled"
+
+- name: disable selinux setting
+  lineinfile: dest=/etc/selinux/config regexp='^SELINUX=.*' line="SELINUX=disabled" state=present backup=true
+  register: is_selinux_setting
+  when: ansible_selinux.status is not defined or ansible_selinux.status != "disabled"
+
+- name: backup selinux setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_selinux_setting.backup}}"
+    - /etc/selinux/config
+  when: is_selinux_setting|changed
+
+- name: delete selinux setting backup
+  file: path={{is_selinux_setting.backup}} state=absent
+  when: is_selinux_setting|changed
+
+- name: generate hosts files
+  lineinfile: dest=/etc/hosts regexp='^{{item}}.*' line="{{item}} {{hostvars[item].ansible_fqdn}} {{hostvars[item].ansible_hostname}}" state=present backup=true
+  when: hostvars[item].ansible_fqdn is defined
+  register: is_hosts_setting
+  with_items: groups['all']
+
+- name: backup hosts setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_hosts_setting.results[0].backup}}"
+    - /etc/hosts
+  when: is_hosts_setting|changed
+
+- name: delete hosts setting backup
+  file: path={{is_hosts_setting.results[0].backup}} state=absent
+  when: is_hosts_setting|changed
+
+- name: Add NOZEROCONF
+  lineinfile: dest=/etc/sysconfig/network regexp="^NOZEROCONF" line="NOZEROCONF=yes" state=present backup=true
+  register: is_network_setting
+
+- name: backup network setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_network_setting.backup}}"
+    - /etc/sysconfig/network
+  when: is_network_setting|changed
+
+- name: delete network setting backup
+  file: path={{is_network_setting.backup}} state=absent
+  when: is_network_setting|changed
+
+- name: Disable ipv6
+  lineinfile: dest=/etc/modprobe.d/ipv6.conf regexp='^options ipv6 disable.*' line="options ipv6 disable=1" state=present create=yes backup=true
+  register: is_ipv6_setting
+
+- name: backup ipv6 setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_ipv6_setting.backup}}"
+    - /etc/modprobe.d/ipv6.conf
+  when: is_ipv6_setting|changed
+
+- name: delete ipv6 setting backup
+  file: path={{is_ipv6_setting.backup}} state=absent
+  when: is_ipv6_setting|changed
+
+- name: add ulimits settings
+  template: src=enableulimit.sh.j2 dest=/etc/profile.d/enableulimit.sh owner=root group=root mode=0644 backup=true
+  register: is_ulimits_setting
+
+- name: backup ulimits setting
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_ulimits_setting.backup_file}}"
+    - /etc/profile.d/enableulimit.sh
+  when: is_ulimits_setting|changed
+
+- name: delete ulimits setting backup
+  file: path={{is_ulimits_setting.backup_file}} state=absent
+  when: is_ulimits_setting|changed and is_ulimits_setting.backup_file is defined
+
+- name: CentOS6 only setting
+  include: centos6.yml
+  when: ansible_distribution_major_version == '6'
+
+- name: CentOS7 only setting
+  include: centos7.yml
+  when: ansible_distribution_major_version == '7'
+
+- name: Add common group
+  group:
+    name={{item.group}}
+    gid={{item.gid}}
+  with_items: common_user
+  when: common_user is defined
+
+- name: Add common user
+  user:
+    name="{{item.name}}"
+    password="{{item.password}}"
+    uid="{{item.uid}}"
+    group="{{item.group}}"
+    comment="{{item.name}}"
+  with_items: common_user
+  when: common_user is defined
+
+- name: reboot after change selinux
+  shell: nohup bash -c "sleep 2s && reboot" &
+  when: ansible_selinux.status is not defined or ansible_selinux.status != "disabled"
+
+- name: wait for the server to go down (reboot)
+  local_action: wait_for host={{ inventory_hostname }} port=22 state=stopped
+  when: ansible_selinux.status is not defined or ansible_selinux.status != "disabled"
+
+- name: wait for the server to come up
+  local_action: wait_for host={{ inventory_hostname }} port=22
+  when: ansible_selinux.status is not defined or ansible_selinux.status != "disabled"
