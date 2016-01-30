@@ -16,8 +16,7 @@ anonymous_enable=NO
 local_enable=YES
 #
 # Uncomment this to enable any form of FTP write command.
-###write_enable=YES
-write_enable=NO
+write_enable=YES
 #
 # Default umask for local users is 077. You may wish to change this to 022,
 # if your users expect that (022 is used by most other ftpd's)
@@ -124,3 +123,5 @@ pam_service_name=vsftpd.virtual
 guest_enable=YES
 guest_username={{common_user[0].name}}
 local_root={{vsftp_dir}}
+chroot_local_user=YES
+virtual_use_local_privs=YES
