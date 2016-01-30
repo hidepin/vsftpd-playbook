@@ -51,7 +51,13 @@
   when: user_db_status.stat.exists
 
 - name: create vsftpd dir
-  file: path={{vsftp_dir}} state=directory owner={{common_user[0].name}} group={{common_user[0].group}}
+  file: path="{{ vsftp_dir }}/etc" state=directory owner={{common_user[0].name}} group={{common_user[0].group}}
+
+- name: add vsftpd passwd
+  template: src=passwd.j2 dest="{{ vsftp_dir }}/etc/passwd" owner={{common_user[0].name}} group={{common_user[0].group}}
+
+- name: add vsftpd group
+  template: src=group.j2 dest="{{ vsftp_dir }}/etc/group" owner={{common_user[0].name}} group={{common_user[0].group}}
 
 - name: add vsftpd settings
   template: src=vsftpd.conf.j2 dest=/etc/vsftpd/vsftpd.conf owner=root group=root mode=0600 backup=true
