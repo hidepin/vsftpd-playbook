@@ -4,4 +4,4 @@
   service: name=vsftpd state=restarted
 
 - name: vsftpd_user recreate
-  shell: db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/logins.db
+  shell: db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db
