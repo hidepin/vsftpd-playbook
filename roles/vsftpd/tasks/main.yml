@@ -38,3 +38,31 @@
 - name: delete vsftpd pam.d setting backup
   file: path={{is_vsftpd_pam.d_setting.backup_file}} state=absent
   when: is_vsftpd_pam_d_setting|changed and is_vsftpd_pam_d_setting.backup_file is defined
+
+- name: add vsftpd user
+  template: src=login.txt.j2 dest=/etc/vsftpd/login.txt owner=root group=root mode=0600 backup=true
+  register: is_vsftpd_user
+  notify:
+    - vsftpd_user recreate
+
+- name: backup vsftpd user
+  fetch:
+    src={{item}}
+    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
+  with_items:
+    - "{{is_vsftpd_user.backup_file}}"
+    - /etc/vsftpd/login.txt
+    - /etc/vsftpd/login.db
+  when: is_vsftpd_user|changed
+
+- name: delete vsftpd user backup
+  file: path={{is_vsftpd_user.backup_file}} state=absent
+  when: is_vsftpd_user|changed and is_vsftpd_user.backup_file is defined
+
+- name: vsftpd user db status
+  stat: path=/etc/vsftpd/login.db
+  register: user_db_status
+
+- name: apply vsftpd user db permission
+  file: path=/etc/vsftpd/login.db owner=root group=root mode=0600
+  when: user_db_status.stat.exists
