@@ -6,7 +6,7 @@
     - vsftpd
 
 - name: add vsftpd pam.d settings
-  template: src=vsftpd.virtual.j2 dest=/etc/pam.dvsftpd.virtual owner=root group=root mode=0644 backup=true
+  template: src=vsftpd.virtual.j2 dest=/etc/pam.d/vsftpd.virtual owner=root group=root mode=0644 backup=true
   register: is_vsftpd_pam_d_setting
 
 - name: backup vsftpd pam.d setting
