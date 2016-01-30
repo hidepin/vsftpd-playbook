@@ -66,3 +66,6 @@
 - name: apply vsftpd user db permission
   file: path=/etc/vsftpd/login.db owner=root group=root mode=0600
   when: user_db_status.stat.exists
+
+- name: create vsftpd dir
+  file: path={{vsftp_dir}} state=directory owner={{common_user[0].name}} group={{common_user[0].group}}
