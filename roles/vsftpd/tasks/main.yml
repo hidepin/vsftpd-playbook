@@ -68,6 +68,16 @@
     register: is_vsftpd_setting
     notify: vsftpd restart
 
+  - name: add vsftpd logrotate settings
+    copy:
+      src: etc_logrotate.d_vsftpd
+      dest: /etc/logrotate.d/vsftpd
+      owner: root
+      group: root
+      mode: 0644
+      backup: true
+    register: is_vsftpd_logrotate_d_setting
+
   always:
   - name: vsftpd backup settings
     include_tasks: backup.yml
@@ -75,6 +85,7 @@
       - "{{ is_vsftpd_pam_d_setting|default() }}"
       - "{{ is_vsftpd_user|default() }}"
       - "{{ is_vsftpd_setting|default() }}"
+      - "{{ is_vsftpd_logrotate_d_setting|default() }}"
     loop_control:
       loop_var: backup_item
 
