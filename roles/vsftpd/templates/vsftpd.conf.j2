@@ -35,7 +35,8 @@ local_umask=022
 #
 # Activate directory messages - messages given to remote users when they
 # go into a certain directory.
-dirmessage_enable=YES
+###dirmessage_enable=YES
+dirmessage_enable=NO
 #
 # Activate logging of uploads/downloads.
 xferlog_enable=YES
@@ -135,11 +136,12 @@ tcp_wrappers=NO
 
 guest_enable=YES
 guest_username={{ vsftpd_guest_username }}
+virtual_use_local_privs=YES
 local_root={{ vsftp_top_dir }}/$USER
 user_sub_token=$USER
-virtual_use_local_privs=YES
 allow_writeable_chroot=YES
 hide_ids=YES
 use_localtime=YES
 dual_log_enable=YES
 vsftpd_log_file=/var/log/vsftpd/vsftpd.log
+chmod_enable=NO
