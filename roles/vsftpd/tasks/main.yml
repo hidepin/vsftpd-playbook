@@ -2,7 +2,7 @@
 # file: roles/vsftpd/tasks/main.yml
 - name: packages install
   yum:
-    name: {{item}}
+    name: "{{ item }}"
     state: present
   with_items:
     - vsftpd
@@ -12,14 +12,25 @@
     path: /var/log/vsftpd
     owner: root
     group: root
+    mode: 0755
+    state: directory
+
+- name: create vsftpd top dir
+  file:
+    path: "{{ vsftp_top_dir }}"
+    owner: root
+    group: root
+    mode: 0755
     state: directory
 
 - name: create vsftpd dir
   file:
-    path: "{{ vsftp_dir }}"
-    owner: {{common_user[0].name}}
-    group: {{common_user[0].group}}
+    path: "{{ vsftp_top_dir }}/{{ item.name }}"
+    owner: "{{ vsftpd_guest_username }}"
+    group: "{{ vsftpd_guest_username }}"
+    mode: 0777
     state: directory
+  with_items: "{{ vsftp_user }}"
 
 - block:
   - name: add vsftpd user

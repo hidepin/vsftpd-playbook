@@ -32,7 +32,6 @@ update_pkg:
   - systemd
 
 vsftp_user:
-     name: 'ftp'
-     password: 'ftp123'
+  - { name: "ftp", password: "ftp123" }
 vsftp_top_dir: "/opt/share/ftproot"
 vsftpd_guest_username: "{{common_user[0].name}}"
