@@ -16,8 +16,8 @@
 
 - block:
   - name: add vsftpd pam.d settings
-    template:
-      src: vsftpd.virtual.j2
+    copy:
+      src: etc_pam.d_vsftpd
       dest: /etc/pam.d/vsftpd
       owner: root
       group: root
