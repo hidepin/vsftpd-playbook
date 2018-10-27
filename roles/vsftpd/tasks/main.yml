@@ -15,16 +15,6 @@
     group: {{common_user[0].group}}
 
 - block:
-  - name: add vsftpd pam.d settings
-    copy:
-      src: etc_pam.d_vsftpd
-      dest: /etc/pam.d/vsftpd
-      owner: root
-      group: root
-      mode: 0644
-      backup: true
-    register: is_vsftpd_pam_d_setting
-
   - name: add vsftpd user
     template:
       src: login.txt.j2
@@ -38,6 +28,16 @@
       - vsftpd_user recreate
       - vsftpd user db status
       - apply vsftpd user db permission
+
+  - name: add vsftpd pam.d settings
+    copy:
+      src: etc_pam.d_vsftpd
+      dest: /etc/pam.d/vsftpd
+      owner: root
+      group: root
+      mode: 0644
+      backup: true
+    register: is_vsftpd_pam_d_setting
 
   - name: add vsftpd settings
     template:
