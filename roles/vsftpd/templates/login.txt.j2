@@ -1,2 +1,4 @@
-{{vsftp_user.name}}
-{{vsftp_user.password}}
+{% for user in vsftp_user %}
+{{ user.name }}
+{{ user.password }}
+{% endfor %}

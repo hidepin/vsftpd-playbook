@@ -1,0 +1,19 @@
+/var/log/vsftpd/vsftpd.log {
+    # ftpd doesn't handle SIGHUP properly
+    daily
+    rotate 100
+    compress
+    delaycompress
+    missingok
+    ifempty
+}
+
+/var/log/vsftpd/xferlog {
+    # ftpd doesn't handle SIGHUP properly
+    daily
+    rotate 100
+    compress
+    delaycompress
+    missingok
+    ifempty
+}

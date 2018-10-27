@@ -1,0 +1,6 @@
+#%PAM-1.0
+session    optional     pam_keyinit.so    force revoke
+auth       required	pam_userdb.so db=/etc/vsftpd/login
+account    required	pam_userdb.so db=/etc/vsftpd/login
+session    required     pam_loginuid.so
+session    include	password-auth

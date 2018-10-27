@@ -1,75 +1,96 @@
 ---
 # file: roles/vsftpd/tasks/main.yml
 - name: packages install
-  yum: name={{item}} state=present
+  yum:
+    name: "{{ item }}"
+    state: present
   with_items:
     - vsftpd
 
-- name: add vsftpd pam.d settings
-  template: src=vsftpd.virtual.j2 dest=/etc/pam.d/vsftpd.virtual owner=root group=root mode=0644 backup=true
-  register: is_vsftpd_pam_d_setting
+- name: create vsftpd log dir
+  file:
+    path: /var/log/vsftpd
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
 
-- name: backup vsftpd pam.d setting
-  fetch:
-    src={{item}}
-    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
-  with_items:
-    - "{{is_vsftpd_pam.d_setting.backup_file}}"
-    - /etc/pam.d/vsftpd.virtual
-  when: is_vsftpd_pam_d_setting|changed
-
-- name: delete vsftpd pam.d setting backup
-  file: path={{is_vsftpd_pam.d_setting.backup_file}} state=absent
-  when: is_vsftpd_pam_d_setting|changed and is_vsftpd_pam_d_setting.backup_file is defined
-
-- name: add vsftpd user
-  template: src=login.txt.j2 dest=/etc/vsftpd/login.txt owner=root group=root mode=0600 backup=true
-  register: is_vsftpd_user
-  notify:
-    - vsftpd_user recreate
-
-- name: backup vsftpd user
-  fetch:
-    src={{item}}
-    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
-  with_items:
-    - "{{is_vsftpd_user.backup_file}}"
-    - /etc/vsftpd/login.txt
-    - /etc/vsftpd/login.db
-  when: is_vsftpd_user|changed
-
-- name: delete vsftpd user backup
-  file: path={{is_vsftpd_user.backup_file}} state=absent
-  when: is_vsftpd_user|changed and is_vsftpd_user.backup_file is defined
-
-- name: vsftpd user db status
-  stat: path=/etc/vsftpd/login.db
-  register: user_db_status
-
-- name: apply vsftpd user db permission
-  file: path=/etc/vsftpd/login.db owner=root group=root mode=0600
-  when: user_db_status.stat.exists
+- name: create vsftpd top dir
+  file:
+    path: "{{ vsftp_top_dir }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
 
 - name: create vsftpd dir
-  file: path="{{ vsftp_dir }}" state=directory owner={{common_user[0].name}} group={{common_user[0].group}}
+  file:
+    path: "{{ vsftp_top_dir }}/{{ item.name }}"
+    owner: "{{ vsftpd_guest_username }}"
+    group: "{{ vsftpd_guest_username }}"
+    mode: 0777
+    state: directory
+  with_items: "{{ vsftp_user }}"
 
-- name: add vsftpd settings
-  template: src=vsftpd.conf.j2 dest=/etc/vsftpd/vsftpd.conf owner=root group=root mode=0600 backup=true
-  register: is_vsftpd_setting
-  notify: vsftpd restart
+- block:
+  - name: add vsftpd user
+    template:
+      src: login.txt.j2
+      dest: /etc/vsftpd/login.txt
+      owner: root
+      group: root
+      mode: 0600
+      backup: true
+    register: is_vsftpd_user
+    notify:
+      - vsftpd_user recreate
+      - vsftpd user db status
+      - apply vsftpd user db permission
 
-- name: backup vsftpd setting
-  fetch:
-    src={{item}}
-    dest="backup/{{ansible_date_time.date}}-{{ansible_date_time.time|regex_replace(':', '')}}"
-  with_items:
-    - "{{is_vsftpd_setting.backup_file}}"
-    - /etc/vsftpd/vsftpd.conf
-  when: is_vsftpd_setting|changed
+  - name: add vsftpd pam.d settings
+    copy:
+      src: etc_pam.d_vsftpd
+      dest: /etc/pam.d/vsftpd
+      owner: root
+      group: root
+      mode: 0644
+      backup: true
+    register: is_vsftpd_pam_d_setting
 
-- name: delete vsftpd setting backup
-  file: path={{is_vsftpd_setting.backup_file}} state=absent
-  when: is_vsftpd_setting|changed and is_vsftpd_setting.backup_file is defined
+  - name: add vsftpd settings
+    template:
+      src: vsftpd.conf.j2
+      dest: /etc/vsftpd/vsftpd.conf
+      owner: root
+      group: root
+      mode: 0600
+      backup: true
+    register: is_vsftpd_setting
+    notify: vsftpd restart
+
+  - name: add vsftpd logrotate settings
+    copy:
+      src: etc_logrotate.d_vsftpd
+      dest: /etc/logrotate.d/vsftpd
+      owner: root
+      group: root
+      mode: 0644
+      backup: true
+    register: is_vsftpd_logrotate_d_setting
+
+  always:
+  - name: vsftpd backup settings
+    include_tasks: backup.yml
+    with_flattened:
+      - "{{ is_vsftpd_pam_d_setting|default() }}"
+      - "{{ is_vsftpd_user|default() }}"
+      - "{{ is_vsftpd_setting|default() }}"
+      - "{{ is_vsftpd_logrotate_d_setting|default() }}"
+    loop_control:
+      loop_var: backup_item
 
 - name: enable vsftpd services
-  service: name=vsftpd state=started enabled=yes
+  service:
+    name: vsftpd
+    state: started
+    enabled: yes
