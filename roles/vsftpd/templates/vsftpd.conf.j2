@@ -9,7 +9,8 @@
 # capabilities.
 #
 # Allow anonymous FTP? (Beware - allowed by default if you comment this out).
-anonymous_enable=YES
+###anonymous_enable=YES
+anonymous_enable=NO
 #
 # Uncomment this to allow local users to log in.
 # When SELinux is enforcing check for SE bool ftp_home_dir
@@ -51,6 +52,7 @@ connect_from_port_20=YES
 # You may override where the log file goes if you like. The default is shown
 # below.
 #xferlog_file=/var/log/xferlog
+xferlog_file=/var/log/vsftpd/xferlog
 #
 # If you want, you can have your log file in standard ftpd xferlog format.
 # Note that the default log file location is /var/log/xferlog in this case.
@@ -84,6 +86,7 @@ xferlog_std_format=YES
 #
 # You may fully customise the login banner string:
 #ftpd_banner=Welcome to blah FTP service.
+ftpd_banner=Welcome to FTP service.
 #
 # You may specify a file of disallowed anonymous e-mail addresses. Apparently
 # useful for combatting certain DoS attacks.
@@ -98,6 +101,7 @@ xferlog_std_format=YES
 # the user does not have write access to the top level directory within the
 # chroot)
 #chroot_local_user=YES
+chroot_local_user=YES
 #chroot_list_enable=YES
 # (default follows)
 #chroot_list_file=/etc/vsftpd/chroot_list
@@ -111,7 +115,8 @@ xferlog_std_format=YES
 # When "listen" directive is enabled, vsftpd runs in standalone mode and
 # listens on IPv4 sockets. This directive cannot be used in conjunction
 # with the listen_ipv6 directive.
-listen=NO
+###listen=NO
+listen=YES
 #
 # This directive enables listening on IPv6 sockets. By default, listening
 # on the IPv6 "any" address (::) will accept connections from both IPv6
@@ -120,8 +125,18 @@ listen=NO
 # addresses) then you must run two copies of vsftpd with two configuration
 # files.
 # Make sure, that one of the listen options is commented !!
-listen_ipv6=YES
+###listen_ipv6=YES
+listen_ipv6=NO
 
 pam_service_name=vsftpd
 userlist_enable=YES
-tcp_wrappers=YES
+###tcp_wrappers=YES
+tcp_wrappers=NO
+
+guest_enable=YES
+guest_username={{common_user[0].name}}
+local_root={{vsftp_dir}}
+virtual_use_local_privs=YES
+hide_ids=YES
+use_localtime=YES
+cmds_allowed=CWD,DELE,LIST,PASV,RETR,TYPE,QUIT
