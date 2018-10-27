@@ -7,12 +7,19 @@
   with_items:
     - vsftpd
 
+- name: create vsftpd log dir
+  file:
+    path: /var/log/vsftpd
+    owner: root
+    group: root
+    state: directory
+
 - name: create vsftpd dir
   file:
     path: "{{ vsftp_dir }}"
-    state: directory
     owner: {{common_user[0].name}}
     group: {{common_user[0].group}}
+    state: directory
 
 - block:
   - name: add vsftpd user
