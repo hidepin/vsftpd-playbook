@@ -34,4 +34,5 @@ update_pkg:
 vsftp_user:
      name: 'ftp'
      password: 'ftp123'
-vsftp_dir: "/opt/share/ftproot"
+vsftp_top_dir: "/opt/share/ftproot"
+vsftpd_guest_username: "{{common_user[0].name}}"

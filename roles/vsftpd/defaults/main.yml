@@ -1,3 +1,4 @@
 ---
 # defaults file for vsftpd
+vsftp_top_dir: "/opt/share/ftproot"
 vsftpd_guest_username: "{{common_user[0].name}}"
