@@ -7,41 +7,6 @@
   with_items:
     - vsftpd
 
-- name: add vsftpd pam.d settings
-  template:
-    src: vsftpd.virtual.j2
-    dest: /etc/pam.d/vsftpd
-    owner: root
-    group: root
-    mode: 0644
-    backup: true
-  register: is_vsftpd_pam_d_setting
-
-- name: add vsftpd user
-  template:
-    src: login.txt.j2
-    dest: /etc/vsftpd/login.txt
-    owner: root
-    group: root
-    mode: 0600
-    backup: true
-  register: is_vsftpd_user
-  notify:
-    - vsftpd_user recreate
-
-- name: vsftpd user db status
-  stat:
-    path: /etc/vsftpd/login.db
-  register: user_db_status
-
-- name: apply vsftpd user db permission
-  file:
-    path: /etc/vsftpd/login.db
-    owner: root
-    group: root
-    mode: 0600
-  when: user_db_status.stat.exists
-
 - name: create vsftpd dir
   file:
     path: "{{ vsftp_dir }}"
@@ -49,16 +14,51 @@
     owner: {{common_user[0].name}}
     group: {{common_user[0].group}}
 
-- name: add vsftpd settings
-  template:
-    src: vsftpd.conf.j2
-    dest: /etc/vsftpd/vsftpd.conf
-    owner: root
-    group: root
-    mode: 0600
-    backup: true
-  register: is_vsftpd_setting
-  notify: vsftpd restart
+- block:
+  - name: add vsftpd pam.d settings
+    template:
+      src: vsftpd.virtual.j2
+      dest: /etc/pam.d/vsftpd
+      owner: root
+      group: root
+      mode: 0644
+      backup: true
+    register: is_vsftpd_pam_d_setting
+
+  - name: add vsftpd user
+    template:
+      src: login.txt.j2
+      dest: /etc/vsftpd/login.txt
+      owner: root
+      group: root
+      mode: 0600
+      backup: true
+    register: is_vsftpd_user
+    notify:
+      - vsftpd_user recreate
+      - vsftpd user db status
+      - apply vsftpd user db permission
+
+  - name: add vsftpd settings
+    template:
+      src: vsftpd.conf.j2
+      dest: /etc/vsftpd/vsftpd.conf
+      owner: root
+      group: root
+      mode: 0600
+      backup: true
+    register: is_vsftpd_setting
+    notify: vsftpd restart
+
+  always:
+  - name: vsftpd backup settings
+    include_tasks: backup.yml
+    with_flattened:
+      - "{{ is_vsftpd_pam_d_setting|default() }}"
+      - "{{ is_vsftpd_user|default() }}"
+      - "{{ is_vsftpd_setting|default() }}"
+    loop_control:
+      loop_var: backup_item
 
 - name: enable vsftpd services
   service:

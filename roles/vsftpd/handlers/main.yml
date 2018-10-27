@@ -1,9 +1,22 @@
 ---
 # file: roles/vsftpd/handlers/main.yml
+- name: vsftpd_user recreate
+  shell: db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db && chmod 0600 /etc/vsftpd/login.db
+
+- name: vsftpd user db status
+  stat:
+    path: /etc/vsftpd/login.db
+  register: user_db_status
+
+- name: apply vsftpd user db permission
+  file:
+    path: /etc/vsftpd/login.db
+    owner: root
+    group: root
+    mode: 0600
+  when: user_db_status.stat.exists
+
 - name: vsftpd restart
   service:
     name: vsftpd
     state: restarted
-
-- name: vsftpd_user recreate
-  shell: db_load -T -t hash -f /etc/vsftpd/login.txt /etc/vsftpd/login.db && chmod 0600 /etc/vsftpd/login.db
