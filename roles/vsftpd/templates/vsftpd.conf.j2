@@ -9,10 +9,10 @@
 # capabilities.
 #
 # Allow anonymous FTP? (Beware - allowed by default if you comment this out).
-###anonymous_enable=YES
-anonymous_enable=NO
+anonymous_enable=YES
 #
 # Uncomment this to allow local users to log in.
+# When SELinux is enforcing check for SE bool ftp_home_dir
 local_enable=YES
 #
 # Uncomment this to enable any form of FTP write command.
@@ -25,6 +25,7 @@ local_umask=022
 # Uncomment this to allow the anonymous FTP user to upload files. This only
 # has an effect if the above global write enable is activated. Also, you will
 # obviously need to create a directory writable by the FTP user.
+# When SELinux is enforcing check for SE bool allow_ftpd_anon_write, allow_ftpd_full_access
 #anon_upload_enable=YES
 #
 # Uncomment this if you want the anonymous FTP user to be able to create
@@ -35,8 +36,7 @@ local_umask=022
 # go into a certain directory.
 dirmessage_enable=YES
 #
-# The target log file can be vsftpd_log_file or xferlog_file.
-# This depends on setting xferlog_std_format parameter
+# Activate logging of uploads/downloads.
 xferlog_enable=YES
 #
 # Make sure PORT transfer connections originate from port 20 (ftp-data).
@@ -48,12 +48,12 @@ connect_from_port_20=YES
 #chown_uploads=YES
 #chown_username=whoever
 #
-# The name of log file when xferlog_enable=YES and xferlog_std_format=YES
-# WARNING - changing this filename affects /etc/logrotate.d/vsftpd.log
+# You may override where the log file goes if you like. The default is shown
+# below.
 #xferlog_file=/var/log/xferlog
 #
-# Switches between logging into vsftpd_log_file and xferlog_file files.
-# NO writes to vsftpd_log_file, YES to xferlog_file
+# If you want, you can have your log file in standard ftpd xferlog format.
+# Note that the default log file location is /var/log/xferlog in this case.
 xferlog_std_format=YES
 #
 # You may change the default value for timing out an idle session.
@@ -84,7 +84,6 @@ xferlog_std_format=YES
 #
 # You may fully customise the login banner string:
 #ftpd_banner=Welcome to blah FTP service.
-ftpd_banner=Welcome to FTP service.
 #
 # You may specify a file of disallowed anonymous e-mail addresses. Apparently
 # useful for combatting certain DoS attacks.
@@ -95,6 +94,9 @@ ftpd_banner=Welcome to FTP service.
 # You may specify an explicit list of local users to chroot() to their home
 # directory. If chroot_local_user is YES, then this list becomes a list of
 # users to NOT chroot().
+# (Warning! chroot'ing can be very dangerous. If using chroot, make sure that
+# the user does not have write access to the top level directory within the
+# chroot)
 #chroot_local_user=YES
 #chroot_list_enable=YES
 # (default follows)
@@ -109,23 +111,17 @@ ftpd_banner=Welcome to FTP service.
 # When "listen" directive is enabled, vsftpd runs in standalone mode and
 # listens on IPv4 sockets. This directive cannot be used in conjunction
 # with the listen_ipv6 directive.
-listen=YES
+listen=NO
 #
-# This directive enables listening on IPv6 sockets. To listen on IPv4 and IPv6
-# sockets, you must run two copies of vsftpd with two configuration files.
+# This directive enables listening on IPv6 sockets. By default, listening
+# on the IPv6 "any" address (::) will accept connections from both IPv6
+# and IPv4 clients. It is not necessary to listen on *both* IPv4 and IPv6
+# sockets. If you want that (perhaps because you want to listen on specific
+# addresses) then you must run two copies of vsftpd with two configuration
+# files.
 # Make sure, that one of the listen options is commented !!
-#listen_ipv6=YES
+listen_ipv6=YES
 
-###pam_service_name=vsftpd
-pam_service_name=vsftpd.virtual
-###userlist_enable=YES
-###tcp_wrappers=YES
-
-guest_enable=YES
-guest_username={{common_user[0].name}}
-local_root={{vsftp_dir}}
-chroot_local_user=YES
-virtual_use_local_privs=YES
-hide_ids=YES
-use_localtime=YES
-cmds_allowed=CWD,DELE,LIST,PASV,RETR,TYPE,QUIT
+pam_service_name=vsftpd
+userlist_enable=YES
+tcp_wrappers=YES
